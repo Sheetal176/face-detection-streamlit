@@ -53,18 +53,24 @@ st.write(
 st.divider()
 
 # ── Robust Cascade Classifier Loader ──────────────────────────────────────
-@st.cache_resource
 def load_cascade_classifier():
-    # Attempt 1: Default OpenCV data paths
     cascade_filename = "haarcascade_frontalface_default.xml"
-    default_path = os.path.join(cv2.data.haarcascades, cascade_filename)
     
+    # 1. Local project file (bundled in repository)
+    local_path = os.path.join(os.path.dirname(__file__), cascade_filename)
+    if os.path.exists(local_path):
+        detector = cv2.CascadeClassifier(local_path)
+        if not detector.empty():
+            return detector
+
+    # 2. Default OpenCV data paths
+    default_path = os.path.join(cv2.data.haarcascades, cascade_filename)
     if os.path.exists(default_path):
         detector = cv2.CascadeClassifier(default_path)
         if not detector.empty():
             return detector
             
-    # Attempt 2: Download the XML from official OpenCV repo if not found locally
+    # 3. Download fallback if not present
     local_backup_path = os.path.join(os.getcwd(), cascade_filename)
     if not os.path.exists(local_backup_path):
         github_url = f"https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/{cascade_filename}"
