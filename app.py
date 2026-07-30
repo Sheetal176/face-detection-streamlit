@@ -53,14 +53,31 @@ st.write(
 st.divider()
 
 # ── Robust Cascade Classifier Loader ──────────────────────────────────────
+def get_cascade_class():
+    """Retrieve CascadeClassifier class safely across OpenCV versions and submodules."""
+    cls = getattr(cv2, 'CascadeClassifier', None)
+    if cls is not None:
+        return cls
+    objdetect = getattr(cv2, 'objdetect', None)
+    if objdetect is not None:
+        cls = getattr(objdetect, 'CascadeClassifier', None)
+        if cls is not None:
+            return cls
+    return None
+
 def create_detector_instance(xml_path):
     """Safely instantiate and load CascadeClassifier without throwing unhandled exceptions."""
     try:
         if not os.path.exists(xml_path):
             return None
+            
+        ClassifierClass = get_cascade_class()
+        if ClassifierClass is None:
+            return None
+
         # Method A: Direct path constructor
         try:
-            d = cv2.CascadeClassifier(xml_path)
+            d = ClassifierClass(xml_path)
             if d is not None and not d.empty():
                 return d
         except Exception:
@@ -68,7 +85,7 @@ def create_detector_instance(xml_path):
             
         # Method B: Empty constructor + load()
         try:
-            d = cv2.CascadeClassifier()
+            d = ClassifierClass()
             if d.load(xml_path) and not d.empty():
                 return d
         except Exception:
