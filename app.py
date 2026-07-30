@@ -53,46 +53,66 @@ st.write(
 st.divider()
 
 # ── Robust Cascade Classifier Loader ──────────────────────────────────────
+def create_detector_instance(xml_path):
+    """Safely instantiate and load CascadeClassifier without throwing unhandled exceptions."""
+    try:
+        if not os.path.exists(xml_path):
+            return None
+        # Method A: Direct path constructor
+        try:
+            d = cv2.CascadeClassifier(xml_path)
+            if d is not None and not d.empty():
+                return d
+        except Exception:
+            pass
+            
+        # Method B: Empty constructor + load()
+        try:
+            d = cv2.CascadeClassifier()
+            if d.load(xml_path) and not d.empty():
+                return d
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return None
+
 def load_cascade_classifier():
     cascade_filename = "haarcascade_frontalface_default.xml"
     app_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # 1. Try bundled XML file in app directory (absolute path)
+    # 1. Bundled XML in app directory
     local_path = os.path.join(app_dir, cascade_filename)
-    if os.path.exists(local_path):
-        detector = cv2.CascadeClassifier()
-        if detector.load(local_path) and not detector.empty():
-            return detector
+    detector = create_detector_instance(local_path)
+    if detector is not None:
+        return detector
 
-    # 2. Try current working directory
+    # 2. Current working directory
     cwd_path = os.path.join(os.getcwd(), cascade_filename)
-    if os.path.exists(cwd_path):
-        detector = cv2.CascadeClassifier()
-        if detector.load(cwd_path) and not detector.empty():
-            return detector
+    detector = create_detector_instance(cwd_path)
+    if detector is not None:
+        return detector
 
-    # 3. Try cv2.data.haarcascades
+    # 3. OpenCV default data directory
     try:
-        default_path = os.path.join(cv2.data.haarcascades, cascade_filename)
-        if os.path.exists(default_path):
-            detector = cv2.CascadeClassifier()
-            if detector.load(default_path) and not detector.empty():
-                return detector
+        cv_path = os.path.join(cv2.data.haarcascades, cascade_filename)
+        detector = create_detector_instance(cv_path)
+        if detector is not None:
+            return detector
     except Exception:
         pass
-            
-    # 4. Download fallback if not present
+
+    # 4. Download fallback if needed
     if not os.path.exists(local_path):
         github_url = f"https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/{cascade_filename}"
         try:
             urllib.request.urlretrieve(github_url, local_path)
-            detector = cv2.CascadeClassifier()
-            if detector.load(local_path) and not detector.empty():
+            detector = create_detector_instance(local_path)
+            if detector is not None:
                 return detector
         except Exception as e:
-            st.error(f"Failed to download cascade classifier: {e}")
-            return None
-            
+            st.error(f"Failed to download cascade file: {e}")
+
     return None
 
 face_detector = load_cascade_classifier()
