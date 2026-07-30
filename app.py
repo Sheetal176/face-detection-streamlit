@@ -41,7 +41,7 @@ st.markdown("""
         border: 1px solid #eee;
     }
     </style>
-""", unsafe_style=unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # ── Title & Intro ─────────────────────────────────────────────────────────
 st.title("👤 AI Playground: Face Detection")
